@@ -1,0 +1,3 @@
+threadedBinTree:
+	@echo Building $@ ...
+	@ g++ -g main.cpp -o ../bin/$@

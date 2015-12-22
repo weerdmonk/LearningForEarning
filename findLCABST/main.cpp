@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -16,7 +17,8 @@ typedef struct _node
 
 // incase of a binary search tree LCA shall lie between k1 and k2
 // k1 < LCA->key < k2
-
+// TODO handle case when k1 and/or k2 is not present
+// TODO hadnle case when root is equal to k1 or k2
 Node *findLCA(Node *root, int k1, int k2)
 {
 	if (!root) return NULL;
@@ -28,7 +30,7 @@ Node *findLCA(Node *root, int k1, int k2)
 	return root; 
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	Node *root = new Node(10);
 
@@ -42,8 +44,18 @@ int main()
 
 	root->right->right->left = new Node(17);
 
+	int k1, k2;
+	if (argc == 3)
+	{
+		k1 = atoi(argv[1]);
+		k2 = atoi(argv[2]);
+	}
+	else
+	{
+		cin >> k1 >> k2;
+	}
 
-	Node *LCA = findLCA(root, 3, 20);
+	Node *LCA = findLCA(root, k1, k2);
 	if (LCA) cout << LCA->key << endl;
 	else cout << "Key(s) not found!\n";
 

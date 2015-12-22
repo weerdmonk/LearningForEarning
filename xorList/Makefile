@@ -1,0 +1,3 @@
+xorList: main.cpp
+	@echo Bulding $@ ...
+	@ g++ -g $< -o ../bin/$@
