@@ -88,7 +88,7 @@ int main()
 	root->larger = new BTNode(12);
 
 	root->smaller->smaller = new BTNode(1);
-	root->smaller->larger - new BTNode(6);
+	root->smaller->larger = new BTNode(6);
 
 	root->larger->smaller = new BTNode(9);
 
