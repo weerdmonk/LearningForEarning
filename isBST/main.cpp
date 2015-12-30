@@ -58,7 +58,7 @@ int main()
 	root->right = new BTNode(12);
 
 	root->left->left = new BTNode(1);
-	root->left->right - new BTNode(3);
+	root->left->right = new BTNode(3);
 
 	root->right->left = new BTNode(9);
 
