@@ -4,7 +4,7 @@
 # Add each problem as target. 'all' will build everything
 # Output to 'bin' directory inside sub-dir named as target
 
-TARGETS= xorList threadedBinTree queueUsingStacks findLCA findLCABST isBST treeListRecursion treeLvlOrder
+TARGETS= xorList threadedBinTree queueUsingStacks findLCA findLCABST isBST treeListRecursion treeLvlOrder mirrorTree
 
 #include xorList/Makefile
 
