@@ -44,39 +44,84 @@ void deleteTree(Node *root)
 	delete root;
 }
 
-void printKthNodes(Node *root, Node *from, int k)
+/* more precisely print children at kth depth */
+void printKthChildren(Node *root, int k)
 {
-	if (root == NULL) return;
-	static bool shouldCount = false;
+	if ( root == NULL || k  < 0 ) return;
 
 	if (k == 0)
 	{
 		cout << root->key << "\n";
 		return;
 	}
-
-	if (root == from) shouldCount = true;
-
-	if (shouldCount)
-	{
-		printKthNodes(root->left, from, k - 1);
-		printKthNodes(root->right, from, k - 1);
-
-	}
-	else
-	{
-		printKthNodes(root->left, from, k);
-		printKthNodes(root->right, from, k);
-	}
+	printKthChildren(root->left, k - 1);
+	printKthChildren(root->right, k - 1);
 }
 
-void printKthNodes(Node *root, Node *from, int k)
+/* print nodes at k distance  */
+/*
+ * if target node is found in subtree
+ * 	//return the position of parent relative to child node
+ * 	return distance of parent relative to child node
+ * else
+ * 	return -1 as guard value if target node is not found
+ *
+ * 
+ */
+int printKthNodes(Node *root, Node *from, int k)
 {
-	if (root == NULL) return;
+	// parent node is leaf node so return guard value
+	if (root == NULL) return -1;
 
+	// base case, target node is found
+	if (root == from ) 
+	{
+		printKthChildren(root, k);
+		// as this node is target node, its calling parent is at distance 1
+		return 1;
+	}
+
+	// if current node is not target node recurse left subtree
+	int distLeft = printKthNodes(root->left, from, k);
+	if (distLeft != -1) // target node was found on left subtree
+	{
+		if (distLeft == k) // current node is at k distance from target node so print it
+		{
+			cout << root->key << "\n";
+		}
+		else // current is not at k distance from target node so either parent should be printed or a node in the right subtree
+		{
+			// lets check the right subtree with new k = k - (distance of current node from target + distance of right child)
+			// so new k = k - (distLeft - 1)
+			printKthChildren(root->right, k - distLeft - 1);
+		}
+		// return distance of current node from target plus one (as parent is at distance one from current node)
+		return distLeft++;
+	}
+
+	// if target node was not found in left subtree recurse right subtree
+	int distRight = printKthNodes(root->right, from, k);
+	if (distRight != -1) // target node was fount on right subtree
+	{
+		if ( distRight == k ) // current is at distance k from target node, so print it
+		{
+			cout << root->key << "\n";
+		}
+		else // current is not distance k from target node so either parent should be printed of a nodee in the left subtree
+		{
+			// lets check ;eft subtree with new k
+			printKthChildren(root->right, k - distRight - 1);
+		}
+		// return distance of current node from target plus one (as parent is at distance one from current node)
+		return distRight++;
+	}
+
+	// gaurd value as we have not encountered target node yet
+	return -1;
 }
 
 int main()
+
 {
 /*	
  *               7
