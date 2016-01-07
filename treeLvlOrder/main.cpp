@@ -25,6 +25,26 @@ void insert(Node **root, int key)
 	else if (key < (*root)->key) insert(&((*root)->left), key);
 }
 
+/*
+ * Instead of using double pointer
+ * return the updated pointer
+ * and store it.
+ *
+ * root = update(root);
+ */
+Node *insert2(Node *root, int key)
+{
+	if (root == NULL)
+	{
+		return new Node(key);
+	}
+
+	if (key < root->key) root->left = insert2(root->left, key);
+	else if (key > root->key) root->right = insert2(root->right, key);
+
+	return root;
+}
+
 void inorder(Node *root)
 {
 	if (root == NULL) return;
@@ -96,6 +116,16 @@ void printLvlOrder(Node *root)
  *     3. enque left then right children of current node
  */
 
+int size(Node *root)
+{
+	if (root == NULL) return 0;
+
+	int lsize = size(root->left);
+	int rsize = size(root->right);
+
+	return lsize + rsize + 1;
+}
+
 int main()
 {
 /*	
@@ -117,14 +147,22 @@ int main()
 	//root->right->right = new Node(20);
 
 	Node *root = NULL;
-	insert(&root, 7);
-	insert(&root, 5);
-	insert(&root, 12);
-	insert(&root, 1);
-	insert(&root, 6);
-	insert(&root, 20);
+	//insert(&root, 7);
+	//insert(&root, 5);
+	//insert(&root, 12);
+	//insert(&root, 1);
+	//insert(&root, 6);
+	//insert(&root, 20);
+
+	root = insert2(root, 7);
+	root = insert2(root, 5);
+	root = insert2(root, 12);
+	root = insert2(root, 1);
+	root = insert2(root, 6);
+	root = insert2(root, 20);
 
 	//inorder(root);
+	cout << "Size = " << size(root) << "\n\n";
 	printLvlOrder(root);
 
 	/* delete the tree */
