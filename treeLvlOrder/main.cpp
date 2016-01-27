@@ -116,6 +116,86 @@ void printLvlOrder(Node *root)
  *     3. enque left then right children of current node
  */
 
+/* Implement queue as double linked list */
+typedef struct _qnode
+{
+	Node *ptr;
+	struct _qnode *next, *prev;
+	_qnode(Node *nod)
+	{
+		ptr = nod;
+		next = prev = NULL;
+	}
+} qnode;
+
+qnode *enque(qnode **head, qnode **tail, Node *nod)
+{
+#ifdef DEBUG
+	cout << "\n>>>>>" << nod->key << "\n";
+#endif
+	if ( *tail == NULL )
+	{
+		*tail = new qnode(nod);
+		*head = *tail;
+	}
+	else
+	{
+		qnode *tmp = new qnode(nod);
+		tmp->prev = *tail;
+		(*tail)->next = tmp;
+		*tail = tmp;
+	}
+
+	return *head;
+}
+
+Node *deque(qnode **head, qnode **tail)
+{
+	if ( *head == NULL ) return NULL;
+
+	qnode *qtmp = *head;
+	Node *tmp = (*head)->ptr;
+#ifdef DEBUG
+	cout << "\n deque: head pre = " << *head << "\n";
+	cout << "\n deque: tail pre = " << *tail << "\n";
+#endif
+	if ( (*head)->next ) (*head)->next->prev = NULL;
+	else if ( *head == *tail ) *tail = NULL;
+	*head = (*head)->next;
+#ifdef DEBUG
+	cout << "\n deque: head = " << *head << "\n";
+	cout << "\n deque: tail = " << *tail << "\n";
+#endif
+	delete qtmp;
+
+#ifdef DEBUG
+	cout << "\n<<<<<" << tmp->key << "\n";
+#endif
+	return tmp;
+}
+
+bool isEmpty(qnode *head, qnode *tail)
+{
+	return ( head == NULL || tail == NULL );
+}
+
+void printLvlOrder2(Node *root)
+{
+	if (root == NULL) return;
+
+	qnode *head = NULL, *tail = NULL;
+	enque(&head, &tail, root);
+
+	while(!isEmpty(head, tail))
+	{
+		Node *tmp = deque(&head, &tail);
+		cout << tmp->key << " ";
+		if (tmp->left) enque(&head, &tail, tmp->left);
+		if (tmp->right) enque(&head, &tail, tmp->right);
+	}
+	cout << "\n";
+}
+
 int size(Node *root)
 {
 	if (root == NULL) return 0;
@@ -163,7 +243,8 @@ int main()
 
 	//inorder(root);
 	cout << "Size = " << size(root) << "\n\n";
-	printLvlOrder(root);
+	//printLvlOrder(root);
+	printLvlOrder2(root);
 
 	/* delete the tree */
 
