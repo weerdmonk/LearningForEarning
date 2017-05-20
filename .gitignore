@@ -1,2 +1,10 @@
 
-bin/*
+# ignore vi editor swap files
+*.swp
+
+# ignore ctags files
+tags
+
+# ignore build directories
+bin
+debug
