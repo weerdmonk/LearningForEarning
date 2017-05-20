@@ -1,3 +1,2 @@
-mirrorTree:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+mirrorTree: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

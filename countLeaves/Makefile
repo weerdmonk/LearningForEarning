@@ -1,3 +1,2 @@
-countLeaves:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+countLeaves: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

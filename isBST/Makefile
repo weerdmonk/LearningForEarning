@@ -1,3 +1,2 @@
-isBST:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+isBST: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

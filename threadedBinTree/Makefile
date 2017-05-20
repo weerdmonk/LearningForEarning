@@ -1,3 +1,2 @@
-threadedBinTree:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+threadedBinTree: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

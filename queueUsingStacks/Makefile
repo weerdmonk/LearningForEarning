@@ -1,3 +1,2 @@
-queueUsingStacks:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+queueUsingStacks: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

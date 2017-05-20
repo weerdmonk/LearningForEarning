@@ -1,3 +1,2 @@
 xorList: main.cpp
-	@echo Bulding $@ ...
-	@ g++ -g $< -o ../bin/$@
+	@ g++ -g $^ -o ../$(out_dir)/$@

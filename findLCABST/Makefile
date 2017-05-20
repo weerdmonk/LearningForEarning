@@ -1,3 +1,2 @@
-findLCABST:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+findLCABST: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

@@ -1,3 +1,2 @@
-findLCA:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+findLCA: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@

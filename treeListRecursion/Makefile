@@ -1,3 +1,2 @@
-treeListRecursion:
-	@echo Building $@ ...
-	@ g++ -g main.cpp -o ../bin/$@
+treeListRecursion: main.cpp
+	@ g++ -g $^ -o ../$(out_dir)/$@
