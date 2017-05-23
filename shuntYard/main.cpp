@@ -4,6 +4,10 @@
 
 using namespace std;
 
+/*
+ * TODO: add support for floating point numbers
+ */
+
 template<class type> struct Stack
 {
   type **array;
@@ -114,7 +118,7 @@ template<class type> struct Queue
   {
     type *data = NULL;
 
-    if ( isEmpty() == true ) 
+    if ( isEmpty() == true )
     {
       cout << "Queue is empty!\n";
       return data;
@@ -130,6 +134,7 @@ template<class type> struct Queue
 };
 
 typedef unsigned int Precedence_t;
+
 enum Associativity_t
 {
   A_NONE = 0,
@@ -144,46 +149,92 @@ struct Operator_t
   Associativity_t assoc;
 };
 
-/* constants */
-const Operator_t operators[] = { { '^', 3, A_RIGHT },
-  { '*', 2, A_LEFT },
-  { '/', 2, A_LEFT },
-  { '+', 1, A_LEFT },
-  { '-', 1, A_LEFT },
-  //{ '(', 0, A_NONE },
-  //{ ')', 0, A_NONE },
-  { '\0', 0, A_NONE }
+struct Function_t
+{
+  char const *func;
+  unsigned int len;
 };
 
+const char func_arg_separator = ',';
+
+enum Token_Type_t
+{
+  T_OP = -1,
+  T_FUNC
+};
+
+struct Token_t
+{
+  Token_Type_t type;
+  union _token
+  {
+    Operator_t op;
+    Function_t func;
+  } token;
+};
+
+/* constants */
+
 const unsigned int num_ops = 5;
+
+const unsigned int num_funcs = 16;
+
+# define left_parenthesis_idx   num_ops + num_funcs
+# define right_parenthesis_idx  num_ops + num_funcs + 1
+
+const Token_t tokens[] = {
+  { T_OP, { .op = {'^', 3, A_RIGHT } } },
+  { T_OP, { .op = {'*', 2, A_LEFT } } },
+  { T_OP, { .op = {'/', 2, A_LEFT } } },
+  { T_OP, { .op = {'+', 1, A_LEFT } } },
+  { T_OP, { .op = {'-', 1, A_LEFT } } },
+  { T_FUNC, { .func = {"min", 3 } } },
+  { T_FUNC, { .func = {"max", 3 } } },
+  { T_FUNC, { .func = {"mod", 3 } } },
+  { T_FUNC, { .func = {"abs", 3 } } },
+  { T_FUNC, { .func = {"sin", 3 } } },
+  { T_FUNC, { .func = {"cos", 3 } } },
+  { T_FUNC, { .func = {"tan", 3 } } },
+  { T_FUNC, { .func = {"cot", 3 } } },
+  { T_FUNC, { .func = {"sec", 3 } } },
+  { T_FUNC, { .func = {"csc", 3 } } },
+  { T_FUNC, { .func = {"arcsin", 6 } } },
+  { T_FUNC, { .func = {"arccos", 6 } } },
+  { T_FUNC, { .func = {"arctan", 6 } } },
+  { T_FUNC, { .func = {"arccot", 6 } } },
+  { T_FUNC, { .func = {"arctan", 6 } } },
+  { T_FUNC, { .func = {"arcsec", 6 } } },
+  { T_OP, { .op = {'(', 0, A_NONE } } },
+  { T_OP, { .op = {')', 0, A_NONE } } }
+};
 
 struct Parser
 {
   /* variables */
   char *str, *output;
-  Stack<char> op_stack;
+  Stack<Token_t> op_stack;
 
   /* methods */
   Parser(const char *string) : op_stack(strlen(string))
   {
-    unsigned int str_len = 0;
-
     str = const_cast<char*>(string);
-
-    str_len = strlen(str);
-
-    output = new char[str_len];
+    output = new char[strlen(str)];
   }
 
   ~Parser()
   {
-
+    delete[] output;
   }
 
-  unsigned int operatorToIdx(char token)
+  unsigned int operatorToIdx(char *tok_str)
   {
     unsigned int idx = -1;
-    switch (token)
+    if (tok_str == NULL)
+    {
+      return idx;
+    }
+
+    switch (*tok_str)
     {
       case '^':
         idx = 0;
@@ -207,25 +258,36 @@ struct Parser
     return idx;
   }
 
-  bool isNumber(char token)
+#define ascii_zero  48
+#define ascii_nine  57
+
+  bool isNumber(char *tok_str)
   {
     bool result = false;
+    if (tok_str == NULL)
+    {
+      return result;
+    }
 
-    if ( (token >= 47) &&
-        (token <= 58) )
+    if ( (*tok_str>= 48) &&
+        (*tok_str <= 57) )
     {
       result = true;
     }
     return result;
   }
 
-  bool isOperator(char token)
+  bool isOperator(char *tok_str)
   {
     bool result = false;
+    if (tok_str == NULL)
+    {
+      return result;
+    }
 
     for(int i = 0; i < num_ops; i++)
     {
-      if (token == operators[i].op)
+      if (*tok_str == tokens[i].token.op.op)
       {
         result = true;
         break;
@@ -235,10 +297,39 @@ struct Parser
     return result;
   }
 
+  bool isFunction(char* tok_str, unsigned int *tok_len, unsigned int *tok_idx)
+  {
+    bool result = false;
+
+    for(int i = num_ops; i < num_ops + num_funcs; i++)
+    {
+      if ( strncmp(tok_str, tokens[i].token.func.func, tokens[i].token.func.len) == 0 )
+      {
+        result = true;
+        if (tok_len != NULL)
+        {
+          *tok_len = tokens[i].token.func.len;
+        }
+        if (tok_idx != NULL)
+        {
+          *tok_idx = i;
+        }
+        break;
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Algorithm
-   * 
+   *
    * Read token
+   * If token is a function
+   *  push function onto op_stack
+   * If token is argument separator
+   *  until token at top of op_stack is (
+   *    pop tokens off op_stack and enqueue to output
    * If token is an operator o1
    *  while there is an operator o2 at top of op_stack and either
    *  o1 is left associative and has precedence <= o2 or
@@ -255,8 +346,10 @@ struct Parser
    *  Enqueue to output
    * If no more tokens are left to read
    *  Pop token(s) off op_stack and enqueue to output
-   * 
+   *
    */
+
+#define output_add_space()  output[out_idx++] = ' '
 
   void parse()
   {
@@ -264,37 +357,58 @@ struct Parser
 
     for(int i = 0; str[i] != '\0'; i++)
     {
-      /*
-       * TODO; handle invalid inputs
-       * TODO: add support for floating point numbers
-       * TODO: add support for multi-character operators
-       * TODO; add support for common functions
-       */
-
       char token = str[i];
+      unsigned int func_len, func_idx;
 
       if ( token == ' ' )
       {
         /* skip whitespaces */
         continue;
       }
-      else if ( isOperator(token) == true )
+      else if ( isFunction(&str[i], &func_len, &func_idx) == true )
       {
-        char *op_top = op_stack.peek();
+        op_stack.push(const_cast<Token_t*>(&tokens[func_idx]));
+        i += func_len - 1;
+      }
+      else if ( token == func_arg_separator )
+      {
+        Token_t *op_top = op_stack.peek();
 
         while( (op_top != NULL) &&
-            (isOperator(*op_top) == true) )
+            (op_top->token.op.op != '(') )
         {
-          unsigned int tok_idx = operatorToIdx(token);
-          unsigned int top_idx = operatorToIdx(*op_top);
+          op_top = op_stack.pop();
+          output[out_idx++] = op_top->token.op.op;
+          output_add_space();
 
-          if ( ( (operators[tok_idx].assoc == A_LEFT) &&
-                (operators[tok_idx].prec <= operators[top_idx].prec) ) ||
-              ( (operators[tok_idx].assoc == A_RIGHT) &&
-                (operators[tok_idx].prec < operators[top_idx].prec) ) )
+          op_top = op_stack.peek();
+        }
+
+        if ( (op_top == NULL) ||
+            (op_top->token.op.op != '(') )
+        {
+          cout << "Mismatched ')' found!!\n";
+          return;
+        }
+      }
+      else if ( isOperator(&str[i]) == true )
+      {
+        unsigned int tok_idx = operatorToIdx(&str[i]);
+        Token_t *op_top = op_stack.peek();
+
+        while( (op_top != NULL) &&
+               (isOperator(&(op_top->token.op.op)) == true) )
+        {
+          unsigned int top_idx = operatorToIdx(&(op_top->token.op.op));
+
+          if ( ( (tokens[tok_idx].token.op.assoc == A_LEFT) &&
+                (tokens[tok_idx].token.op.prec <= tokens[top_idx].token.op.prec) ) ||
+              ( (tokens[tok_idx].token.op.assoc == A_RIGHT) &&
+                (tokens[tok_idx].token.op.prec < tokens[top_idx].token.op.prec) ) )
           {
             op_top = op_stack.pop();
-            output[out_idx++] = *op_top;
+            output[out_idx++] = op_top->token.op.op;
+            output_add_space();
           }
           else
           {
@@ -304,37 +418,51 @@ struct Parser
           op_top = op_stack.peek();
         }
 
-        op_stack.push(&str[i]);
+        op_stack.push(const_cast<Token_t*>(&tokens[tok_idx]));
       }
       else if ( token == '(' )
       {
-        op_stack.push(&str[i]);
+        op_stack.push(const_cast<Token_t*>(&tokens[left_parenthesis_idx]));
       }
       else if ( token == ')' )
       {
-        char *op_top = op_stack.peek();
+        Token_t *op_top = op_stack.peek();
 
         while( (op_top != NULL) &&
-            (*op_top != '(') )
+            (op_top->token.op.op != '(') )
         {
           op_top = op_stack.pop();
-          output[out_idx++] = *op_top;
+          output[out_idx++] = op_top->token.op.op;
+          output_add_space();
 
           op_top = op_stack.peek();
         }
 
         op_top = op_stack.pop();
         if ( (op_top == NULL) ||
-            (*op_top != '(') )
+             (op_top->token.op.op != '(') )
         {
           cout << "Mismatched ')' found!!\n";
           return;
         }
+
+        op_top = op_stack.peek();
+        if ( (op_top != NULL) &&
+             (op_top->type == T_FUNC) )
+        {
+          op_top = op_stack.pop();
+          for (int i = 0; i < op_top->token.func.len; i++)
+          {
+            output[out_idx++] = op_top->token.func.func[i];
+          }
+          output_add_space();
+        }
       }
-      else if ( isNumber(token) == true )
+      else if ( isNumber(&str[i]) == true )
       {
         /* token is a number or variable */
         output[out_idx++] = str[i];
+        output_add_space();
       }
       else
       {
@@ -347,13 +475,24 @@ struct Parser
     /* pop all operators from op_stack and enqueue to output */
     while ( op_stack.isEmpty() != true )
     {
-      char *op_top = op_stack.pop();
-      if ( *op_top == '(' )
+      Token_t *op_top = op_stack.pop();
+      if ( op_top->token.op.op == '(' )
       {
         cout << "Mismatched '(' found!!\n";
         return;
       }
-      output[out_idx++] = *op_top;
+      if (op_top->type == T_OP)
+      {
+        output[out_idx++] = op_top->token.op.op;
+        output_add_space();
+      }
+      else if (op_top->type == T_FUNC)
+      {
+        for (int i = 0; i < op_top->token.func.len; i++)
+        {
+          output[out_idx++] = op_top->token.func.func[i];
+        }
+      }
     }
 
     /* append null character to output string */
@@ -369,8 +508,18 @@ struct Parser
 void print_help(const char* binary_path)
 {
   cout << "Usage: " << binary_path << " {expression string to parse}\n";
-  cout << "\nSupported operators are: ^, *, /, +, and -\n";
-  cout << "Only integers are allowed. Common functions are not supported yet.\n\n";
+  cout << "\nSupported operators:\n" \
+                                 "  ^, *, /, +, -\n";
+  cout << "Supported functions:\n" \
+                                "  min, max,\n" \
+                                "  mod, abs,\n" \
+                                "  sin, cos,\n" \
+                                "  tan, cot,\n" \
+                                "  sec, csc,\n" \
+                                "  arcsin, arccos,\n" \
+                                "  arctan, arccot,\n" \
+                                "  arcsec, arccsc,\n";
+  cout << "\nOnly integers are allowed.\n";
 }
 
 int main(int argc, char** argv)
@@ -444,7 +593,7 @@ int main(int argc, char** argv)
 
   delete d1, d2, d3, d4, d5, d6;
 */
-  
+
   if (argc != 2)
   {
     print_help(argv[0]);
