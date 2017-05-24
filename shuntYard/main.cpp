@@ -159,7 +159,7 @@ const char func_arg_separator = ',';
 
 enum Token_Type_t
 {
-  T_OP = -1,
+  T_OP = 1,
   T_FUNC
 };
 
@@ -269,8 +269,8 @@ struct Parser
       return result;
     }
 
-    if ( (*tok_str>= 48) &&
-        (*tok_str <= 57) )
+    if ( (*tok_str>= ascii_zero) &&
+         (*tok_str <= ascii_nine) )
     {
       result = true;
     }
@@ -341,11 +341,13 @@ struct Parser
    * If token is )
    *  until token at top of op_stack is (
    *    pop tokens off op_stack and enqueue to output
-   *  Pop off left ( from op_stack but dont enqueue to output
+   *  pop off left ( from op_stack but dont enqueue to output
+   *  if token at top of op_stack is a function
+   *    pop it off and enqueue to output
    * If token is a number
-   *  Enqueue to output
+   *  enqueue to output
    * If no more tokens are left to read
-   *  Pop token(s) off op_stack and enqueue to output
+   *  pop token(s) off op_stack and enqueue to output
    *
    */
 
