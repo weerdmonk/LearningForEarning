@@ -4,10 +4,6 @@
 
 using namespace std;
 
-/*
- * TODO: add support for floating point numbers
- */
-
 template<class type> struct Stack
 {
   type **array;
@@ -152,6 +148,7 @@ struct Operator_t
 struct Function_t
 {
   char const *func;
+  unsigned int args;
   unsigned int len;
 };
 
@@ -188,22 +185,22 @@ const Token_t tokens[] = {
   { T_OP, { .op = {'/', 2, A_LEFT } } },
   { T_OP, { .op = {'+', 1, A_LEFT } } },
   { T_OP, { .op = {'-', 1, A_LEFT } } },
-  { T_FUNC, { .func = {"min", 3 } } },
-  { T_FUNC, { .func = {"max", 3 } } },
-  { T_FUNC, { .func = {"mod", 3 } } },
-  { T_FUNC, { .func = {"abs", 3 } } },
-  { T_FUNC, { .func = {"sin", 3 } } },
-  { T_FUNC, { .func = {"cos", 3 } } },
-  { T_FUNC, { .func = {"tan", 3 } } },
-  { T_FUNC, { .func = {"cot", 3 } } },
-  { T_FUNC, { .func = {"sec", 3 } } },
-  { T_FUNC, { .func = {"csc", 3 } } },
-  { T_FUNC, { .func = {"arcsin", 6 } } },
-  { T_FUNC, { .func = {"arccos", 6 } } },
-  { T_FUNC, { .func = {"arctan", 6 } } },
-  { T_FUNC, { .func = {"arccot", 6 } } },
-  { T_FUNC, { .func = {"arctan", 6 } } },
-  { T_FUNC, { .func = {"arcsec", 6 } } },
+  { T_FUNC, { .func = {"min", 2, 3 } } },
+  { T_FUNC, { .func = {"max", 2, 3 } } },
+  { T_FUNC, { .func = {"mod", 2, 3 } } },
+  { T_FUNC, { .func = {"abs", 1, 3 } } },
+  { T_FUNC, { .func = {"sin", 1, 3 } } },
+  { T_FUNC, { .func = {"cos", 1, 3 } } },
+  { T_FUNC, { .func = {"tan", 1, 3 } } },
+  { T_FUNC, { .func = {"cot", 1, 3 } } },
+  { T_FUNC, { .func = {"sec", 1, 3 } } },
+  { T_FUNC, { .func = {"csc", 1, 3 } } },
+  { T_FUNC, { .func = {"arcsin", 1, 6 } } },
+  { T_FUNC, { .func = {"arccos", 1, 6 } } },
+  { T_FUNC, { .func = {"arctan", 1, 6 } } },
+  { T_FUNC, { .func = {"arccot", 1, 6 } } },
+  { T_FUNC, { .func = {"arctan", 1, 6 } } },
+  { T_FUNC, { .func = {"arcsec", 1, 6 } } },
   { T_OP, { .op = {'(', 0, A_NONE } } },
   { T_OP, { .op = {')', 0, A_NONE } } }
 };
@@ -356,127 +353,163 @@ struct Parser
   void parse()
   {
     unsigned int out_idx = 0;
+    static unsigned char is_space_pending = 0;
+    static unsigned int arg_count = 1;
 
     for(int i = 0; str[i] != '\0'; i++)
     {
       char token = str[i];
       unsigned int func_len, func_idx;
 
-      if ( token == ' ' )
+      if ( isNumber(&str[i]) == true )
       {
-        /* skip whitespaces */
-        continue;
+        /* token is a number or variable */
+        output[out_idx++] = token;
+        is_space_pending = 1;
       }
-      else if ( isFunction(&str[i], &func_len, &func_idx) == true )
+      else if ( token == '.' )
       {
-        op_stack.push(const_cast<Token_t*>(&tokens[func_idx]));
-        i += func_len - 1;
-      }
-      else if ( token == func_arg_separator )
-      {
-        Token_t *op_top = op_stack.peek();
-
-        while( (op_top != NULL) &&
-            (op_top->token.op.op != '(') )
+        if ( isNumber(&str[i + 1]) == true )
         {
-          op_top = op_stack.pop();
-          output[out_idx++] = op_top->token.op.op;
-          output_add_space();
-
-          op_top = op_stack.peek();
+          output[out_idx++] = token;
         }
-
-        if ( (op_top == NULL) ||
-            (op_top->token.op.op != '(') )
+        else
         {
-          cout << "Mismatched ')' found!!\n";
+          cout << "Missing fractional part after radix point!!\n";
           return;
         }
       }
-      else if ( isOperator(&str[i]) == true )
+      else
       {
-        unsigned int tok_idx = operatorToIdx(&str[i]);
-        Token_t *op_top = op_stack.peek();
-
-        while( (op_top != NULL) &&
-               (isOperator(&(op_top->token.op.op)) == true) )
+        if ( is_space_pending == 1 )
         {
-          unsigned int top_idx = operatorToIdx(&(op_top->token.op.op));
+          output_add_space();
+          is_space_pending = 0;
+        }
 
-          if ( ( (tokens[tok_idx].token.op.assoc == A_LEFT) &&
-                (tokens[tok_idx].token.op.prec <= tokens[top_idx].token.op.prec) ) ||
-              ( (tokens[tok_idx].token.op.assoc == A_RIGHT) &&
-                (tokens[tok_idx].token.op.prec < tokens[top_idx].token.op.prec) ) )
+        if ( token == ' ' )
+        {
+          /* skip whitespaces */
+          continue;
+        }
+        else if ( isFunction(&str[i], &func_len, &func_idx) == true )
+        {
+          op_stack.push(const_cast<Token_t*>(&tokens[func_idx]));
+          i += func_len - 1;
+        }
+        else if ( token == func_arg_separator )
+        {
+          Token_t *op_top = op_stack.peek();
+
+          arg_count++;
+
+          while( (op_top != NULL) &&
+                 (op_top->token.op.op != '(') )
           {
             op_top = op_stack.pop();
             output[out_idx++] = op_top->token.op.op;
             output_add_space();
+
+            op_top = op_stack.peek();
           }
-          else
+
+          if ( (op_top == NULL) ||
+               (op_top->token.op.op != '(') )
           {
-            break;
+            cout << "Mismatched ',' found!!\n";
+            return;
+          }
+        }
+        else if ( isOperator(&str[i]) == true )
+        {
+          unsigned int tok_idx = operatorToIdx(&str[i]);
+          Token_t *op_top = op_stack.peek();
+
+          while( (op_top != NULL) &&
+                 (isOperator(&(op_top->token.op.op)) == true) )
+          {
+            unsigned int top_idx = operatorToIdx(&(op_top->token.op.op));
+
+            if ( ( (tokens[tok_idx].token.op.assoc == A_LEFT) &&
+                   (tokens[tok_idx].token.op.prec <= tokens[top_idx].token.op.prec) ) ||
+                 ( (tokens[tok_idx].token.op.assoc == A_RIGHT) &&
+                   (tokens[tok_idx].token.op.prec < tokens[top_idx].token.op.prec) ) )
+            {
+              op_top = op_stack.pop();
+              output[out_idx++] = op_top->token.op.op;
+              output_add_space();
+            }
+            else
+            {
+              break;
+            }
+
+            op_top = op_stack.peek();
+          }
+
+          op_stack.push(const_cast<Token_t*>(&tokens[tok_idx]));
+        }
+        else if ( token == '(' )
+        {
+          op_stack.push(const_cast<Token_t*>(&tokens[left_parenthesis_idx]));
+        }
+        else if ( token == ')' )
+        {
+          Token_t *op_top = op_stack.peek();
+
+          while( (op_top != NULL) &&
+                 (op_top->token.op.op != '(') )
+          {
+            op_top = op_stack.pop();
+            output[out_idx++] = op_top->token.op.op;
+            output_add_space();
+
+            op_top = op_stack.peek();
+          }
+
+          op_top = op_stack.pop();
+          if ( (op_top == NULL) ||
+               (op_top->token.op.op != '(') )
+          {
+            cout << "Mismatched ')' found!!\n";
+            return;
           }
 
           op_top = op_stack.peek();
+          if ( (op_top != NULL) &&
+               (op_top->type == T_FUNC) )
+          {
+            if ( arg_count != op_top->token.func.args )
+            {
+              cout << "Invalid numberof arguments for the function \"" << op_top->token.func.func << "\"!!\n";
+              return;
+            }
+            arg_count = 1;
+
+            op_top = op_stack.pop();
+            for (int i = 0; i < op_top->token.func.len; i++)
+            {
+              output[out_idx++] = op_top->token.func.func[i];
+            }
+            output_add_space();
+          }
         }
-
-        op_stack.push(const_cast<Token_t*>(&tokens[tok_idx]));
-      }
-      else if ( token == '(' )
-      {
-        op_stack.push(const_cast<Token_t*>(&tokens[left_parenthesis_idx]));
-      }
-      else if ( token == ')' )
-      {
-        Token_t *op_top = op_stack.peek();
-
-        while( (op_top != NULL) &&
-            (op_top->token.op.op != '(') )
+        else
         {
-          op_top = op_stack.pop();
-          output[out_idx++] = op_top->token.op.op;
-          output_add_space();
-
-          op_top = op_stack.peek();
-        }
-
-        op_top = op_stack.pop();
-        if ( (op_top == NULL) ||
-             (op_top->token.op.op != '(') )
-        {
-          cout << "Mismatched ')' found!!\n";
+          cout << "Invalid input data!!\n";
           return;
         }
-
-        op_top = op_stack.peek();
-        if ( (op_top != NULL) &&
-             (op_top->type == T_FUNC) )
-        {
-          op_top = op_stack.pop();
-          for (int i = 0; i < op_top->token.func.len; i++)
-          {
-            output[out_idx++] = op_top->token.func.func[i];
-          }
-          output_add_space();
-        }
       }
-      else if ( isNumber(&str[i]) == true )
-      {
-        /* token is a number or variable */
-        output[out_idx++] = str[i];
-        output_add_space();
-      }
-      else
-      {
-        cout << "Invalid input data!!\n";
-        return;
-      }
-
     }
 
     /* pop all operators from op_stack and enqueue to output */
     while ( op_stack.isEmpty() != true )
     {
+      if ( is_space_pending == 1 )
+      {
+        output_add_space();
+        is_space_pending = 0;
+      }
       Token_t *op_top = op_stack.pop();
       if ( op_top->token.op.op == '(' )
       {
